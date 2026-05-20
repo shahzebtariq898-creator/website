@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Gold Price Forecast</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body class="dashboard-page">
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="brand-icon sm">Au</span>
+      <div>
+        <strong>Gold Forecast</strong>
+        <span class="muted">{{ user_email }}</span>
+      </div>
+    </div>
+    <a href="{{ url_for('logout') }}" class="btn btn-ghost">Log out</a>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h2>Gold price insights</h2>
+      <p>Compare model predictions with live market data, then forecast the next seven days from any price you enter.</p>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <h3>Actual vs predicted</h3>
+        <span class="badge">Last ~60 days · COMEX (GC=F)</span>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="historyChart"></canvas>
+      </div>
+      <p id="historyStatus" class="status muted">Loading chart…</p>
+    </section>
+
+    <section class="card forecast-section">
+      <div class="card-header">
+        <h3>7-day forecast</h3>
+        <span class="badge">Enter current gold price (USD/oz)</span>
+      </div>
+      <form id="forecastForm" class="forecast-form">
+        <input type="number" id="priceInput" name="price" step="0.01" min="0.01" placeholder="e.g. 4485.00" required>
+        <button type="submit" class="btn btn-primary">Get forecast</button>
+      </form>
+      <p id="forecastError" class="alert alert-error hidden"></p>
+
+      <div id="forecastResults" class="hidden">
+        <div class="forecast-grid" id="forecastNumbers"></div>
+        <div class="chart-wrap">
+          <canvas id="forecastChart"></canvas>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
