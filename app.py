@@ -38,6 +38,10 @@ except ImportError:
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "gold-forecast-dev-key-change-in-prod")
 
+if os.environ.get("VERCEL") or os.environ.get("VERCEL_ENV"):
+    app.config["SESSION_COOKIE_SECURE"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
 init_db()
 
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "gold_price_model.pkl")

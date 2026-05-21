@@ -6,7 +6,17 @@ from datetime import datetime, timedelta, timezone
 
 from werkzeug.security import check_password_hash, generate_password_hash
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "users.db")
+def get_db_path() -> str:
+    if os.environ.get("VERCEL") or os.environ.get("VERCEL_ENV"):
+        return "/tmp/users.db"
+    return os.path.join(os.path.dirname(__file__), "users.db")
+
+
+def get_conn():
+    conn = sqlite3.connect(get_db_path())
+    conn.row_factory = sqlite3.Row
+    return conn
+
 
 DEFAULT_USER = {
     "name": "Shahzeb",
@@ -14,12 +24,6 @@ DEFAULT_USER = {
     "phone": "03000000000",
     "password": "12340000",
 }
-
-
-def get_conn():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
 
 
 def init_db():
