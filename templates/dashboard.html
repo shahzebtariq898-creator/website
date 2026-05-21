@@ -13,10 +13,13 @@
       <span class="brand-icon sm">Au</span>
       <div>
         <strong>Gold Forecast</strong>
-        <span class="muted">{{ user_email }}</span>
+        <span class="muted">{{ user_name }} · {{ user_email }}</span>
       </div>
     </div>
-    <a href="{{ url_for('logout') }}" class="btn btn-ghost">Log out</a>
+    <div class="topbar-actions">
+      <a href="{{ url_for('forgot_password') }}" class="btn btn-ghost">Forgot password</a>
+      <a href="{{ url_for('logout') }}" class="btn btn-ghost">Log out</a>
+    </div>
   </header>
 
   <main class="container">

@@ -13,8 +13,9 @@ Open http://127.0.0.1:5000
 
 ## Login
 
-- **Email:** shahzeb2003@gmail.com  
-- **Password:** 12340000  
+- **Sign up** — name, email, phone, password (stored in local SQLite `users.db`)
+- **Forgot password** — email → 6-digit OTP → new password (OTP sent via Gmail SMTP; see `.env.example`)
+- Default demo account: `shahzeb2003@gmail.com` / `12340000` (phone: `03000000000` for reset)  
 
 ## Features
 

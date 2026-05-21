@@ -1,6 +1,7 @@
 import os
 from datetime import datetime, timedelta, timezone
 from functools import wraps
+from pathlib import Path
 
 import joblib
 import numpy as np
@@ -16,11 +17,28 @@ from flask import (
     url_for,
 )
 
+from database import (
+    authenticate,
+    create_password_otp,
+    create_user,
+    get_user_by_email,
+    get_user_by_id,
+    init_db,
+    verify_otp_and_reset_password,
+)
+from email_service import send_otp_email, smtp_configured
+
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(Path(__file__).parent / ".env")
+except ImportError:
+    pass
+
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "gold-forecast-dev-key-change-in-prod")
 
-VALID_EMAIL = "shahzeb2003@gmail.com"
-VALID_PASSWORD = "12340000"
+init_db()
 
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "gold_price_model.pkl")
 GOLD_TICKER = "GC=F"
@@ -149,18 +167,134 @@ def index():
     return redirect(url_for("login"))
 
 
+def set_user_session(user):
+    session["logged_in"] = True
+    session["user_id"] = user["id"]
+    session["user_email"] = user["email"]
+    session["user_name"] = user["name"]
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     error = None
+    success = None
+    if request.args.get("reset_ok"):
+        success = "Password updated. Sign in with your new password."
     if request.method == "POST":
-        email = (request.form.get("email") or "").strip().lower()
+        email = request.form.get("email") or ""
         password = request.form.get("password") or ""
-        if email == VALID_EMAIL.lower() and password == VALID_PASSWORD:
-            session["logged_in"] = True
-            session["user_email"] = email
+        user = authenticate(email, password)
+        if user:
+            set_user_session(user)
             return redirect(url_for("dashboard"))
         error = "Invalid email or password."
-    return render_template("login.html", error=error)
+    return render_template("login.html", error=error, success=success)
+
+
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    error = None
+    success = None
+    form = {}
+    if request.method == "POST":
+        form = {
+            "name": request.form.get("name"),
+            "email": request.form.get("email"),
+            "phone": request.form.get("phone"),
+        }
+        ok, msg = create_user(
+            form["name"],
+            form["email"],
+            form["phone"],
+            request.form.get("password"),
+            request.form.get("confirm_password"),
+        )
+        if ok:
+            success = "Account created. You can sign in now."
+            form = {}
+        else:
+            error = msg
+    return render_template("signup.html", error=error, success=success, form=form)
+
+
+def _send_otp_to_email(email: str):
+    ok, err, otp = create_password_otp(email)
+    if not ok:
+        return False, err
+    user = get_user_by_email(email)
+    sent, send_msg = send_otp_email(email, otp, user.get("name", "") if user else "")
+    if not sent:
+        return False, send_msg
+    return True, send_msg
+
+
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    error = None
+    success = None
+    form = {}
+    if request.method == "POST":
+        email = request.form.get("email") or ""
+        form = {"email": email}
+        if not smtp_configured():
+            error = (
+                "Email OTP is not set up yet. Copy .env.example to .env and add your "
+                "Gmail App Password (MAIL_USERNAME, MAIL_PASSWORD)."
+            )
+        else:
+            ok, msg = _send_otp_to_email(email)
+            if ok:
+                session["reset_email"] = email.strip().lower()
+                return redirect(url_for("forgot_password_verify"))
+            error = msg
+    return render_template("forgot_password.html", error=error, success=success, form=form)
+
+
+@app.route("/forgot-password/verify", methods=["GET", "POST"])
+def forgot_password_verify():
+    email = session.get("reset_email")
+    if not email:
+        return redirect(url_for("forgot_password"))
+
+    error = None
+    success = None
+    if request.method == "POST":
+        ok, msg = verify_otp_and_reset_password(
+            email,
+            request.form.get("otp"),
+            request.form.get("password"),
+            request.form.get("confirm_password"),
+        )
+        if ok:
+            session.pop("reset_email", None)
+            return redirect(url_for("login", reset_ok=1))
+        error = msg
+
+    return render_template(
+        "forgot_password_verify.html", email=email, error=error, success=success
+    )
+
+
+@app.route("/forgot-password/resend", methods=["POST"])
+def forgot_password_resend():
+    email = session.get("reset_email")
+    if not email:
+        return redirect(url_for("forgot_password"))
+
+    if not smtp_configured():
+        return render_template(
+            "forgot_password_verify.html",
+            email=email,
+            error="Email is not configured. Add MAIL_* settings to .env file.",
+        )
+
+    ok, msg = _send_otp_to_email(email)
+    return render_template(
+        "forgot_password_verify.html",
+        email=email,
+        success=msg if ok else None,
+        error=None if ok else msg,
+    )
 
 
 @app.route("/logout")
@@ -172,7 +306,13 @@ def logout():
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    return render_template("dashboard.html", user_email=session.get("user_email", ""))
+    user = get_user_by_id(session.get("user_id")) or {}
+    return render_template(
+        "dashboard.html",
+        user_email=session.get("user_email", ""),
+        user_name=user.get("name") or session.get("user_name", ""),
+        user_phone=user.get("phone", ""),
+    )
 
 
 @app.route("/api/history")

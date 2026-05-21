@@ -47,6 +47,10 @@ body {
   box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
 }
 
+.login-card-wide {
+  max-width: 440px;
+}
+
 .brand {
   text-align: center;
   margin-bottom: 28px;
@@ -159,6 +163,43 @@ body {
   color: var(--danger);
 }
 
+.alert-success {
+  background: rgba(79, 140, 255, 0.12);
+  border: 1px solid rgba(79, 140, 255, 0.35);
+  color: var(--accent);
+}
+
+.auth-links {
+  text-align: center;
+  margin-top: 18px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.auth-links a {
+  color: var(--gold);
+  text-decoration: none;
+}
+
+.auth-links a:hover {
+  text-decoration: underline;
+}
+
+.resend-form {
+  margin-top: 10px;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+#otp {
+  letter-spacing: 0.35em;
+  font-size: 1.25rem;
+  text-align: center;
+  font-weight: 600;
+}
+
 .hidden {
   display: none !important;
 }
@@ -184,6 +225,13 @@ body {
 
 .topbar-left .muted {
   font-size: 0.8rem;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .container {
